@@ -4,231 +4,131 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crop Price Prediction</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
+            max-width: 800px;
+            margin: 0 auto;
             padding: 20px;
             background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 900px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         h1 {
             text-align: center;
             color: #333;
         }
-        .form-group {
-            margin-bottom: 15px;
+        form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         label {
             display: block;
-            margin-bottom: 5px;
+            margin: 10px 0 5px;
             color: #555;
         }
         input, select {
             width: 100%;
             padding: 8px;
-            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
             border-radius: 4px;
-            box-sizing: border-box;
         }
         button {
             width: 100%;
             padding: 10px;
-            background-color: #28a745;
-            color: white;
+            background: #28a745;
+            color: #fff;
             border: none;
             border-radius: 4px;
             cursor: pointer;
         }
         button:hover {
-            background-color: #218838;
+            background: #218838;
         }
         #result {
             margin-top: 20px;
             padding: 10px;
-            border: 1px solid #ddd;
+            background: #e9ecef;
             border-radius: 4px;
-            display: none;
+            text-align: center;
         }
-        .error {
-            color: red;
+        img {
+            max-width: 100%;
             margin-top: 10px;
         }
-        canvas {
+        .model-metrics {
             margin-top: 20px;
-            max-width: 100%;
+            text-align: center;
+            color: #333;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Crop Price Prediction</h1>
-        <div class="form-group">
-            <label for="state">State</label>
-            <select id="state" required>
-                <option value="">Select State</option>
-                <option value="Andhra Pradesh">Andhra Pradesh</option>
-                <option value="Bihar">Bihar</option>
-                <option value="Gujarat">Gujarat</option>
-                <option value="Haryana">Haryana</option>
-                <option value="Karnataka">Karnataka</option>
-                <option value="Madhya Pradesh">Madhya Pradesh</option>
-                <option value="Maharashtra">Maharashtra</option>
-                <option value="Orissa">Orissa</option>
-                <option value="Punjab">Punjab</option>
-                <option value="Rajasthan">Rajasthan</option>
-                <option value="Tamil Nadu">Tamil Nadu</option>
-                <option value="Uttar Pradesh">Uttar Pradesh</option>
-                <option value="West Bengal">West Bengal</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="crop">Crop</label>
-            <select id="crop" required>
-                <option value="">Select Crop</option>
-                <option value="ARHAR">ARHAR</option>
-                <option value="COTTON">COTTON</option>
-                <option value="GRAM">GRAM</option>
-                <option value="GROUNDNUT">GROUNDNUT</option>
-                <option value="MAIZE">MAIZE</option>
-                <option value="MOONG">MOONG</option>
-                <option value="PADDY">PADDY</option>
-                <option value="MUSTARD">MUSTARD</option>
-                <option value="SUGARCANE">SUGARCANE</option>
-                <option value="WHEAT">WHEAT</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="costCultivation">Cost of Cultivation (₹)</label>
-            <input type="number" id="costCultivation" step="0.01" min="0" required>
-        </div>
-        <div class="form-group">
-            <label for="production">Production (Tonnes)</label>
-            <input type="number" id="production" step="0.01" min="0" required>
-        </div>
-        <div class="form-group">
-            <label for="yield">Yield (Quintal/Hectare)</label>
-            <input type="number" id="yield" step="0.01" min="0" required>
-        </div>
-        <div class="form-group">
-            <label for="temperature">Temperature (°C)</label>
-            <input type="number" id="temperature" step="0.01" min="0" required>
-        </div>
-        <div class="form-group">
-            <label for="rainfall">Annual Rainfall (mm)</label>
-            <input type="number" id="rainfall" step="0.01" min="0" required>
-        </div>
-        <button onclick="predictPrice()">Predict Price</button>
-        <div id="result"></div>
-        <div id="error" class="error"></div>
-        <canvas id="featureChart"></canvas>
-        <canvas id="predictionChart"></canvas>
+    <h1>Crop Price Prediction</h1>
+    <form id="prediction-form">
+        <label for="state">State:</label>
+        <select id="state" name="state" required>
+            {% for state in states %}
+            <option value="{{ state }}">{{ state }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="crop">Crop:</label>
+        <select id="crop" name="crop" required>
+            {% for crop in crops %}
+            <option value="{{ crop }}">{{ crop }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="cost_cultivation">Cost of Cultivation (₹):</label>
+        <input type="number" id="cost_cultivation" name="cost_cultivation" step="0.01" required>
+
+        <label for="cost_cultivation2">Cost of Cultivation 2 (₹):</label>
+        <input type="number" id="cost_cultivation2" name="cost_cultivation2" step="0.01" required>
+
+        <label for="production">Production (Tonnes):</label>
+        <input type="number" id="production" name="production" step="0.01" required>
+
+        <label for="yield">Yield (Quintal/Hectare):</label>
+        <input type="number" id="yield" name="yield" step="0.01" required>
+
+        <label for="temperature">Temperature (°C):</label>
+        <input type="number" id="temperature" name="temperature" step="0.01" required>
+
+        <label for="rainfall_annual">RainFall Annual (mm):</label>
+        <input type="number" id="rainfall_annual" name="rainfall_annual" step="0.01" required>
+
+        <button type="submit">Predict Price</button>
+    </form>
+    <div id="result"></div>
+    <div class="model-metrics">
+        <p>Model Accuracy (R² Score): {{ "%.3f" % r2_score }}</p>
     </div>
 
     <script>
-        let featureChart, predictionChart;
-        const apiUrl = window.location.origin + '/predict';  // Dynamic API URL for Render
-
-        async function predictPrice() {
-            // Clear previous results
-            document.getElementById('result').style.display = 'none';
-            document.getElementById('error').innerText = '';
-
-            // Get input values
-            const inputs = {
-                state: document.getElementById('state').value,
-                crop: document.getElementById('crop').value,
-                costCultivation: document.getElementById('costCultivation').value,
-                production: document.getElementById('production').value,
-                yield: document.getElementById('yield').value,
-                temperature: document.getElementById('temperature').value,
-                rainfall: document.getElementById('rainfall').value
-            };
-
-            // Validate inputs
-            if (!inputs.state || !inputs.crop || !inputs.costCultivation || !inputs.production ||
-                !inputs.yield || !inputs.temperature || !inputs.rainfall) {
-                document.getElementById('error').innerText = 'Please fill in all fields.';
-                return;
-            }
-
+        document.getElementById('prediction-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
             try {
-                // Send request to backend
-                const response = await fetch(apiUrl, {
+                const response = await fetch('/predict', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(inputs)
+                    body: formData
                 });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    // Display prediction
-                    document.getElementById('result').style.display = 'block';
-                    document.getElementById('result').innerHTML = `Predicted Crop Price: ₹${result.price.toLocaleString()}`;
-
-                    // Update feature importance chart
-                    if (featureChart) featureChart.destroy();
-                    const ctxFeature = document.getElementById('featureChart').getContext('2d');
-                    featureChart = new Chart(ctxFeature, {
-                        type: 'bar',
-                        data: {
-                            labels: Object.keys(result.featureImportance),
-                            datasets: [{
-                                label: 'Feature Importance',
-                                data: Object.values(result.featureImportance),
-                                backgroundColor: 'dodgerblue'
-                            }]
-                        },
-                        options: {
-                            scales: {
-                                y: { title: { display: true, text: 'Importance' }, beginAtZero: true }
-                            },
-                            plugins: { title: { display: true, text: 'Feature Importance' } }
-                        }
-                    });
-
-                    // Update actual vs predicted chart
-                    if (predictionChart) predictionChart.destroy();
-                    const ctxPrediction = document.getElementById('predictionChart').getContext('2d');
-                    predictionChart = new Chart(ctxPrediction, {
-                        type: 'scatter',
-                        data: {
-                            datasets: [{
-                                label: 'Actual vs Predicted',
-                                data: result.actualVsPredicted,
-                                backgroundColor: 'dodgerblue',
-                                pointRadius: 5
-                            }, {
-                                label: 'User Prediction',
-                                data: [{ actual: result.price, predicted: result.price }],
-                                backgroundColor: 'red',
-                                pointRadius: 8
-                            }]
-                        },
-                        options: {
-                            scales: {
-                                x: { title: { display: true, text: 'Actual Price (₹)' } },
-                                y: { title: { display: true, text: 'Predicted Price (₹)' } }
-                            },
-                            plugins: { title: { display: true, text: 'Actual vs Predicted Prices' } }
-                        }
-                    });
+                const data = await response.json();
+                if (data.error) {
+                    document.getElementById('result').innerHTML = `<p>Error: ${data.error}</p>`;
                 } else {
-                    document.getElementById('error').innerText = result.error || 'An error occurred.';
+                    document.getElementById('result').innerHTML = `
+                        <p>Predicted Price: ₹${data.prediction}</p>
+                        <img src="${data.feature_importance_plot}" alt="Feature Importance">
+                        <img src="${data.actual_vs_predicted_plot}" alt="Actual vs Predicted">
+                    `;
                 }
             } catch (error) {
-                document.getElementById('error').innerText = 'Failed to connect to the server.';
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
             }
-        }
+        });
     </script>
 </body>
 </html>

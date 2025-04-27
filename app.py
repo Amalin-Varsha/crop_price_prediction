@@ -5,74 +5,69 @@ import os
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for cross-origin requests
+CORS(app)
 
-# Load model and encoders
-model_path = 'model/crop_price_model.pkl'
-encoders_path = 'model/label_encoders.pkl'
+# Define file paths relative to app.py
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, 'model', 'crop_price_model.pkl')
+ENCODERS_PATH = os.path.join(BASE_DIR, 'model', 'label_encoders.pkl')
+DATA_PATH = os.path.join(BASE_DIR, 'crop_data.csv')
+METRICS_PATH = os.path.join(BASE_DIR, 'model', 'model_metrics.pkl')
 
-if not os.path.exists(model_path) or not os.path.exists(encoders_path):
-    raise FileNotFoundError("Model or encoder files not found in 'model' directory.")
-
-with open(model_path, 'rb') as f:
-    model = pickle.load(f)
-with open(encoders_path, 'rb') as f:
-    label_encoders = pickle.load(f)
-
-# Load dataset for visualization data
-data = pd.read_csv('crop_data.csv')
+# Load model, encoders, data, and metrics
+try:
+    with open(MODEL_PATH, 'rb') as f:
+        model = pickle.load(f)
+    with open(ENCODERS_PATH, 'rb') as f:
+        label_encoders = pickle.load(f)
+    df = pd.read_csv(DATA_PATH)
+    with open(METRICS_PATH, 'rb') as f:
+        metrics = pickle.load(f)
+    r2_score = metrics['r2_score']
+except FileNotFoundError as e:
+    print(f"Error: File not found - {e}")
+    raise
+except Exception as e:
+    print(f"Error loading files: {e}")
+    raise
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+def home():
+    states = sorted(df['State'].unique())
+    crops = sorted(df['Crop'].unique())
+    return render_template('index.html', states=states, crops=crops, r2_score=r2_score)
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Get input data
-        input_data = request.json
-        state = input_data['state']
-        crop = input_data['crop']
-        cost_cultivation = float(input_data['costCultivation'])
-        production = float(input_data['production'])
-        yield_val = float(input_data['yield'])
-        temperature = float(input_data['temperature'])
-        rainfall = float(input_data['rainfall'])
-
-        # Validate inputs
-        if state not in label_encoders['State'].classes_:
-            return jsonify({'error': f"Invalid state: {state}"}), 400
-        if crop not in label_encoders['Crop'].classes_:
-            return jsonify({'error': f"Invalid crop: {crop}"}), 400
+        data = request.form
+        state = data['state']
+        crop = data['crop']
+        cost_cultivation = float(data['cost_cultivation'])
+        cost_cultivation2 = float(data['cost_cultivation2'])
+        production = float(data['production'])
+        yield_val = float(data['yield'])
+        temperature = float(data['temperature'])
+        rainfall_annual = float(data['rainfall_annual'])
 
         # Encode categorical variables
         state_encoded = label_encoders['State'].transform([state])[0]
         crop_encoded = label_encoders['Crop'].transform([crop])[0]
 
         # Prepare input for model
-        features = [[state_encoded, crop_encoded, cost_cultivation, production, yield_val, temperature, rainfall]]
-        prediction = model.predict(features)[0]
+        input_data = [[state_encoded, crop_encoded, cost_cultivation, cost_cultivation2, production, yield_val, temperature, rainfall_annual]]
+        input_df = pd.DataFrame(input_data, columns=['State', 'Crop', 'CostCultivation', 'CostCultivation2', 'Production', 'Yield', 'Temperature', 'RainFall Annual'])
 
-        # Get feature importance
-        feature_names = ['State', 'Crop', 'CostCultivation', 'Production', 'Yield', 'Temperature', 'RainFall Annual']
-        feature_importance = model.feature_importances_.tolist()
-
-        # Sample actual vs predicted data (using test set)
-        X = data[feature_names].copy()
-        for col in ['State', 'Crop']:
-            X[col] = label_encoders[col].transform(X[col])
-        y_actual = data['Price'].values
-        y_pred = model.predict(X)
-        sample_data = [{'actual': float(actual), 'predicted': float(pred)} for actual, pred in zip(y_actual[:10], y_pred[:10])]
+        # Make prediction
+        prediction = model.predict(input_df)[0]
 
         return jsonify({
-            'price': round(prediction, 2),
-            'featureImportance': {name: imp for name, imp in zip(feature_names, feature_importance)},
-            'actualVsPredicted': sample_data
+            'prediction': round(prediction, 2),
+            'feature_importance_plot': '/static/feature_importance.png',
+            'actual_vs_predicted_plot': '/static/actual_vs_predicted.png'
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(debug=True)
